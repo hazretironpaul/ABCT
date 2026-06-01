@@ -99,19 +99,18 @@
             stroke-dasharray: 4,4;
             stroke-width: 1.5;
         }
-        /* Yeni Stiller */
         .supply-genuine {
-            stroke: #0d6efd; /* Gerçek tasarruf için mavi */
+            stroke: #0d6efd; 
         }
         .supply-artificial {
-            stroke: #dc3545; /* Yapay kredi için kırmızı */
-            stroke-dasharray: 8,4; /* Farklı çizgi stili */
+            stroke: #dc3545; 
+            stroke-dasharray: 8,4; 
         }
         .region-malinvestment {
-            fill: rgba(220, 53, 69, 0.2); /* Kırmızımsı tarama */
+            fill: rgba(220, 53, 69, 0.2); 
         }
         .region-overconsumption {
-            fill: rgba(253, 126, 20, 0.2); /* Turuncumsu tarama */
+            fill: rgba(253, 126, 20, 0.2); 
         }
         .region-label {
             font-size: 12px;
@@ -139,11 +138,10 @@
         const width = 950;
         const height = 850;
 
-        // Origin points for the 4 quadrants
+        // Origin points for the remaining 3 quadrants
         const tr_ox = 550, tr_oy = 350; // Top-Right (PPF)
         const tl_ox = 450, tl_oy = 350; // Top-Left (Hayek)
         const br_ox = 550, br_oy = 750; // Bottom-Right (Funds)
-        const bl_ox = 100, bl_oy = 750; // Bottom-Left (Interest-Time)
 
         const svg = d3.select("#model-canvas")
             .append("svg")
@@ -186,17 +184,10 @@
         svg.append("text").attr("class", "axis-label").attr("x", br_ox - 20).attr("y", br_oy - 280).text("i");
         svg.append("text").attr("class", "title-label").attr("x", br_ox + 150).attr("y", br_oy - 260).text("Ödünç Verilebilir Fonlar Piyasası");
 
-        // Bottom-Left (Interest-Time)
-        svg.append("line").attr("class", "axis-line").attr("x1", bl_ox).attr("y1", bl_oy).attr("x2", bl_ox + 350).attr("y2", bl_oy);
-        svg.append("line").attr("class", "axis-line").attr("x1", bl_ox).attr("y1", bl_oy).attr("x2", bl_ox).attr("y2", bl_oy - 300);
-        svg.append("text").attr("class", "axis-label").attr("x", bl_ox + 330).attr("y", bl_oy + 20).text("t");
-        svg.append("text").attr("class", "axis-label").attr("x", bl_ox - 20).attr("y", bl_oy - 280).text("i");
-        svg.append("text").attr("class", "title-label").attr("x", bl_ox + 175).attr("y", bl_oy - 260).text("Faiz-Zaman İlişkisi");
-
 
         // --- DRAW STATIC CURVES ---
         
-        // PPF Curve (Quarter circle radius 250)
+        // PPF Curve
         svg.append("path")
             .attr("class", "curve")
             .attr("d", `M ${tr_ox} ${tr_oy - 250} A 250 250 0 0 1 ${tr_ox + 250} ${tr_oy}`);
@@ -208,39 +199,28 @@
             .attr("x2", br_ox + 250).attr("y2", br_oy - 50);
         svg.append("text").attr("class", "axis-label").attr("x", br_ox + 260).attr("y", br_oy - 40).text("D");
         
-        // Fixed Interest-Time Curve (Bottom-Left)
-        // Düzeltme 1: Sadece tek bir sabit çizgi çiziyoruz.
-        svg.append("line")
-            .attr("class", "curve")
-            .attr("x1", bl_ox + 50).attr("y1", bl_oy - 200)
-            .attr("x2", bl_ox + 250).attr("y2", bl_oy - 50);
 
         // --- DYNAMIC ELEMENTS GROUPS ---
-        const gHayekRegions = svg.append("g"); // Üçgenin altındaki taralı alanlar için
+        const gHayekRegions = svg.append("g"); 
         const gHayek = svg.append("g");
         const gSupply = svg.append("g");
         const gLines = svg.append("g");
         const gPoints = svg.append("g");
 
-        // Supply Curves (Düzeltme 3: Gerçek ve Yapay arz için ayrı çizgiler)
-        // 1. Gerçek Arz Çizgisi (Mavi)
+        // Supply Curves
         const supplyGenuine = gSupply.append("line").attr("class", "curve supply-genuine");
         const labelGenuine = gSupply.append("text").attr("class", "axis-label").attr("fill", "#0d6efd");
         
-        // 2. Yapay Arz Çizgisi (Kırmızı, Kesik)
         const supplyArtificial = gSupply.append("line").attr("class", "curve supply-artificial").style("opacity", 0);
         const labelArtificial = gSupply.append("text").attr("class", "axis-label").attr("fill", "#dc3545").style("opacity", 0).text("S+ΔM");
 
         // Dynamic points
         const ptFunds = gPoints.append("circle").attr("class", "point").attr("r", 5);
         const ptPPF = gPoints.append("circle").attr("class", "point").attr("r", 5);
-        // Düzeltme 1: Zaman grafiğinde tek bir hareketli nokta
-        const ptTime = gPoints.append("circle").attr("class", "point").attr("r", 5);
 
         // Dashed lines
         const linkI = gLines.append("line").attr("class", "dashed-link").attr("marker-end", "url(#arrow)");
         const linkC = gLines.append("line").attr("class", "dashed-link").attr("marker-end", "url(#arrow)");
-        const linki = gLines.append("line").attr("class", "dashed-link").attr("marker-end", "url(#arrow)");
         
         // Malinvestment visual gap in PPF
         const errorLink = gLines.append("line").attr("class", "error-line").style("opacity", 0);
@@ -249,17 +229,17 @@
         // State definitions
         const states = {
             initial: { 
-                I: 150, C: 200, i: 150, T: 200, t_pos: 116, 
+                I: 150, C: 200, i: 150, T: 200, 
                 gen_offset: 0, showArt: false, isBoom: false,
                 gen_label: "S"
             },
             savings: { 
-                I: 200, C: 150, i: 100, T: 280, t_pos: 183, 
+                I: 200, C: 150, i: 100, T: 280, 
                 gen_offset: 100, showArt: false, isBoom: false,
                 gen_label: "S'"
             },
             credit:  { 
-                I: 200, C: 200, i: 100, T: 280, t_pos: 183, 
+                I: 200, C: 200, i: 100, T: 280, 
                 gen_offset: 0, showArt: true, isBoom: true,
                 gen_label: "S"
             }
@@ -291,13 +271,11 @@
                 .attr("y2", d => tl_oy - (C * (1 - d / numStages)));
             stages.exit().remove();
 
-            // Düzeltme 2: Yanlış Yatırım ve Aşırı Tüketim Bölgelerini Çizme
             if (isBoom) {
-                // Önceki dengedeki üçgenin noktaları (kaba bir kıyaslama için)
                 const baseC = states.initial.C;
                 const baseT = states.initial.T;
                 
-                // Malinvestment Bölgesi (Sol uç / Tabanın uzaması)
+                // Malinvestment Region
                 const malPoints = `${tl_ox - baseT},${tl_oy} ${tl_ox - T},${tl_oy} ${tl_ox - baseT},${tl_oy - (C * (1 - baseT/T))}`;
                 let regionMal = gHayekRegions.select(".mal-region");
                 if(regionMal.empty()) regionMal = gHayekRegions.append("polygon").attr("class", "mal-region region-malinvestment").style("opacity", 0);
@@ -307,8 +285,8 @@
                 if(textMal.empty()) textMal = gHayekRegions.append("text").attr("class", "mal-text region-label").text("Yanlış Yatırım").style("opacity", 0);
                 textMal.transition().duration(duration).attr("x", tl_ox - T + 40).attr("y", tl_oy - 20).style("opacity", 1);
 
-                // Overconsumption Bölgesi (Sağ üst uç / Tüketimin düşmemesi)
-                const sustainC = states.savings.C; // Tasarruf olsaydı düşeceği C
+                // Overconsumption Region
+                const sustainC = states.savings.C; 
                 const overPoints = `${tl_ox},${tl_oy - sustainC} ${tl_ox},${tl_oy - C} ${tl_ox - T*(1 - sustainC/C)},${tl_oy - sustainC}`;
                 let regionOver = gHayekRegions.select(".over-region");
                 if(regionOver.empty()) regionOver = gHayekRegions.append("polygon").attr("class", "over-region region-overconsumption").style("opacity", 0);
@@ -332,7 +310,6 @@
             const duration = 1000;
 
             // 1. Funds Market (Bottom-Right)
-            // Gerçek Tasarruf Çizgisi
             supplyGenuine.transition().duration(duration)
                 .attr("x1", br_ox + 50 + s.gen_offset).attr("y1", br_oy - 50)
                 .attr("x2", br_ox + 250 + s.gen_offset).attr("y2", br_oy - 250);
@@ -340,10 +317,9 @@
                 .attr("x", br_ox + 260 + s.gen_offset).attr("y", br_oy - 260)
                 .text(s.gen_label);
 
-            // Yapay Kredi Çizgisi (Sadece Kredi senaryosunda görünür)
             if (s.showArt) {
                 supplyArtificial.transition().duration(duration).style("opacity", 1)
-                    .attr("x1", br_ox + 50 + 100).attr("y1", br_oy - 50)  // 100 is the shift
+                    .attr("x1", br_ox + 50 + 100).attr("y1", br_oy - 50) 
                     .attr("x2", br_ox + 250 + 100).attr("y2", br_oy - 250);
                 labelArtificial.transition().duration(duration).style("opacity", 1)
                     .attr("x", br_ox + 260 + 100).attr("y", br_oy - 260);
@@ -375,13 +351,7 @@
             // 3. Hayek Triangle (Top-Left)
             drawHayek(s, duration);
 
-            // 4. Interest-Time (Bottom-Left)
-            // Düzeltme 1: Sadece nokta hareket ediyor. Çizgi sabit.
-            ptTime.transition().duration(duration)
-                .attr("cx", bl_ox + s.t_pos)
-                .attr("cy", bl_oy - s.i);
-
-            // 5. Connecting Dashed Lines
+            // 4. Connecting Dashed Lines
             linkI.transition().duration(duration)
                 .attr("x1", br_ox + s.I).attr("y1", br_oy - s.i)
                 .attr("x2", tr_ox + s.I).attr("y2", tr_oy - s.C + 15);
@@ -389,10 +359,6 @@
             linkC.transition().duration(duration)
                 .attr("x1", tr_ox + s.I).attr("y1", tr_oy - s.C)
                 .attr("x2", tl_ox + 15).attr("y2", tl_oy - s.C);
-
-            linki.transition().duration(duration)
-                .attr("x1", br_ox + s.I).attr("y1", br_oy - s.i)
-                .attr("x2", bl_ox + s.t_pos + 15).attr("y2", bl_oy - s.i);
         }
 
         // Initialize default state
