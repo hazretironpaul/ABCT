@@ -23,14 +23,16 @@
         .controls {
             margin-bottom: 20px;
             display: flex;
-            gap: 15px;
+            gap: 10px;
             background: white;
             padding: 15px 25px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+            justify-content: center;
         }
         button {
-            padding: 10px 20px;
+            padding: 10px 18px;
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
@@ -86,6 +88,7 @@
         }
         .point {
             fill: #2c3e50;
+            transition: fill 0.3s;
         }
         .hayek-line {
             stroke: #2c3e50;
@@ -93,6 +96,9 @@
         }
         .malinvestment-point {
             fill: #dc3545;
+        }
+        .bust-point {
+            fill: #856404;
         }
         .error-line {
             stroke: #dc3545;
@@ -118,6 +124,11 @@
             fill: #333;
             text-anchor: middle;
         }
+        .bust-label {
+            font-size: 13px;
+            font-weight: bold;
+            fill: #856404;
+        }
     </style>
 </head>
 <body>
@@ -125,9 +136,11 @@
     <h2>Avusturya İş Döngüsü Teorisi (ABCT) Modeli</h2>
     
     <div class="controls">
-        <button id="btn-initial" class="active" onclick="updateScenario('initial')">Başlangıç Dengesi</button>
-        <button id="btn-savings" onclick="updateScenario('savings')">Gerçek Tasarruf Artışı</button>
-        <button id="btn-credit" onclick="updateScenario('credit')">Yapay Kredi Genişlemesi</button>
+        <button id="btn-initial" class="active" onclick="updateScenario('initial')">1. Başlangıç Dengesi</button>
+        <button id="btn-savings" onclick="updateScenario('savings')">2. Gerçek Tasarruf Artışı</button>
+        <button id="btn-credit" onclick="updateScenario('credit')">3. Yapay Kredi Genişlemesi (Boom)</button>
+        <button id="btn-bust" onclick="updateScenario('bust')">4. Kriz ve Tasfiye (Bust)</button>
+        <button id="btn-recovery" onclick="updateScenario('recovery')">5. Yeniden Denge (Recovery)</button>
     </div>
 
     <div class="chart-container">
@@ -187,7 +200,7 @@
 
         // --- DRAW STATIC CURVES ---
         
-        // PPF Curve
+        // PPF Curve (Radius 250)
         svg.append("path")
             .attr("class", "curve")
             .attr("d", `M ${tr_ox} ${tr_oy - 250} A 250 250 0 0 1 ${tr_ox + 250} ${tr_oy}`);
@@ -216,7 +229,7 @@
 
         // Dynamic points
         const ptFunds = gPoints.append("circle").attr("class", "point").attr("r", 5);
-        const ptPPF = gPoints.append("circle").attr("class", "point").attr("r", 5);
+        const ptPPF = gPoints.append("circle").attr("class", "point").attr("r", 6);
 
         // Dashed lines
         const linkI = gLines.append("line").attr("class", "dashed-link").attr("marker-end", "url(#arrow)");
@@ -226,22 +239,35 @@
         const errorLink = gLines.append("line").attr("class", "error-line").style("opacity", 0);
         const errorText = gLines.append("text").attr("fill", "#dc3545").attr("font-size", "12px").style("opacity", 0).text("Hatalı Koordinat (Boom)");
 
+        // Bust Text
+        const txtBust = gPoints.append("text").attr("class", "bust-label").text("Eğri İçi (Resesyon)").style("opacity", 0);
+
         // State definitions
         const states = {
             initial: { 
                 I: 150, C: 200, i: 150, T: 200, 
-                gen_offset: 0, showArt: false, isBoom: false,
+                gen_offset: 0, showArt: false, isBoom: false, isBust: false,
                 gen_label: "S"
             },
             savings: { 
                 I: 200, C: 150, i: 100, T: 280, 
-                gen_offset: 100, showArt: false, isBoom: false,
+                gen_offset: 100, showArt: false, isBoom: false, isBust: false,
                 gen_label: "S'"
             },
             credit:  { 
                 I: 200, C: 200, i: 100, T: 280, 
-                gen_offset: 0, showArt: true, isBoom: true,
+                gen_offset: 0, showArt: true, isBoom: true, isBust: false,
                 gen_label: "S"
+            },
+            bust: { 
+                I: 100, C: 150, i: 200, T: 140, 
+                gen_offset: 0, showArt: false, isBoom: false, isBust: true,
+                gen_label: "S" // Kredi balonu patlar, suni fon kaybolur, piyasa yüksek faizle daralır
+            },
+            recovery: { 
+                I: 150, C: 200, i: 150, T: 200, 
+                gen_offset: 0, showArt: false, isBoom: false, isBust: false,
+                gen_label: "S" // Hatalı yatırımlar temizlenir, eski doğal dengeye dönülür
             }
         };
 
@@ -332,9 +358,13 @@
                 .attr("cx", br_ox + s.I).attr("cy", br_oy - s.i);
 
             // 2. PPF (Top-Right)
+            let ptClass = "point";
+            if(s.isBoom) ptClass = "point malinvestment-point";
+            if(s.isBust) ptClass = "point bust-point";
+
             ptPPF.transition().duration(duration)
                 .attr("cx", tr_ox + s.I).attr("cy", tr_oy - s.C)
-                .attr("class", s.isBoom ? "point malinvestment-point" : "point");
+                .attr("class", ptClass);
 
             if(s.isBoom) {
                 const sustainC = states.savings.C;
@@ -346,6 +376,13 @@
             } else {
                 errorLink.transition().duration(duration).style("opacity", 0);
                 errorText.transition().duration(duration).style("opacity", 0);
+            }
+
+            if(s.isBust) {
+                txtBust.transition().duration(duration).style("opacity", 1)
+                    .attr("x", tr_ox + s.I + 15).attr("y", tr_oy - s.C + 5);
+            } else {
+                txtBust.transition().duration(duration).style("opacity", 0);
             }
 
             // 3. Hayek Triangle (Top-Left)
